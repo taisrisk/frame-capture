@@ -19,6 +19,9 @@ python capture_logger.py --out dataset/session1 --fps 30 --process-name Game.exe
 # Manual region (left top right bottom)
 python capture_logger.py --out dataset/session1 --fps 30 --region 0 0 1920 1080 --chunk-size 800
 
+# Downscale frames to save disk/IO (example: 720p output)
+python capture_logger.py --out dataset/session1 --process-name Game.exe --resize 1280 720
+
 # If detection fails, list visible windows/PIDs then exit
 python capture_logger.py --debug-list-windows
 ```
@@ -30,6 +33,7 @@ Notable flags:
 - `--skip-late`: drop a frame if the loop is late to avoid drift.
 - `--start-immediately`: begin recording right away (otherwise start paused).
 - `--status-interval` (default 2s): status print cadence (0 = off).
+- `--resize W H`: resize each captured frame before saving (e.g., `1280 720` for 720p) to shrink disk use and speed up conversion/training.
 
 Hotkeys during capture:
 - `F8` toggle pause/resume.
@@ -58,12 +62,12 @@ dataset/session1/
 ```
 
 Details:
-- PNGs are saved via OpenCV (BGR). Frames are chunked to keep folders small.
+- PNGs are saved via OpenCV (BGR), optionally resized if `--resize` is set. Frames are chunked to keep folders small.
 - `actions.npy`: shape `(num_frames, 28)`, dtype `int8` (0/1 per action).
 - `mouse_deltas.npy`: shape `(num_frames, 2)`, dtype `float32` (dx, dy in pixels/frame).
 - `frame_indices.npy`: contiguous indices; non-contiguous raises an error at merge.
 - `dataset.npz`: capture run includes actions, mouse deltas, and frame indices. Rebuilt via `dataset_merge.py` only contains actions + mouse.
-- `meta.json` includes FPS, region/monitor, action layout, chunk list, and file names.
+- `meta.json` includes FPS, region/monitor, action layout, chunk list, recorded frame size, and file names. If resizing was applied, `frame_size`/`resize_target` show the final output dimensions.
 
 Action vector layout (28-D, index order):
 | idx | action    | notes                              |
@@ -112,9 +116,11 @@ python convert_to_nitrogen.py --root dataset/gow --out dataset/gow_nitro.pt
 ```
 
 Key options:
-- `--img-size 256`: resize frames to square RGB (CHW float32 in [0,1]).
+- `--img-size 256`: resize frames to square RGB (CHW float32 in [0,1]). Use higher/lower values (e.g., 640 or 720) to control training resolution.
 - `--seq-len 16`: sliding window length for actions (produces `M = N - T + 1` samples).
 - `--mouse-scale 300 --mouse-clip 1.0`: scale/clip mouse dx/dy into [-1, 1] right-stick values.
+- `--action-dim 20|25`: output action dimension; set to `25` to match checkpoints expecting `action_dim=25` (default 20).
+- `--workers 0`: thread count for image decode/resize (0 = auto, 1 = sequential). Increase if you want faster conversion on multi-core CPUs.
 
 Converter outputs:
 - `obs`: `(M, 3, H, W)` torch float tensor (frames).

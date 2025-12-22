@@ -4,6 +4,7 @@ Frame + input logger for NitroGen fine-tuning on any Windows game.
 - Captures frames via DXCam at a target FPS.
 - Records keyboard/mouse buttons and mouse deltas per frame.
 - Writes chunked frames plus aligned action/mouse logs, then merges into dataset files.
+- Optional downscale before saving (e.g., 1280x720) to cut disk and speed up conversion.
 - Emits alignment metadata (frame indices) to catch any drift.
 
 Usage (PowerShell):
@@ -304,6 +305,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--skip-late", action="store_true", help="Skip a frame if behind schedule.")
     parser.add_argument("--start-immediately", action="store_true", help="Start capturing without waiting for hotkey.")
     parser.add_argument("--debug-list-windows", action="store_true", help="List visible window titles/PIDs then exit.")
+    parser.add_argument(
+        "--resize",
+        type=int,
+        nargs=2,
+        metavar=("width", "height"),
+        help="Resize frames before saving (e.g., 1280 720 for 720p). Uses area interpolation.",
+    )
     return parser.parse_args()
 
 
@@ -326,6 +334,8 @@ def main() -> None:
     running = True
     capturing = bool(args.start_immediately)
     capture_state = "running" if capturing else "paused"
+    resize_shape: Optional[Tuple[int, int]] = tuple(args.resize) if args.resize else None
+    frame_size: Optional[Tuple[int, int]] = None
 
     def stop_running(signum, frame):  # type: ignore[unused-argument]
         nonlocal running
@@ -425,7 +435,10 @@ def main() -> None:
     timestamps = deque(maxlen=240)
     last_status = time.perf_counter()
 
-    print(f"[+] Starting capture -> {out_dir} (FPS={args.fps}, region={region}, hotkey_paused={not capturing})")
+    print(
+        f"[+] Starting capture -> {out_dir} (FPS={args.fps}, region={region}, resize={resize_shape or 'native'}, "
+        f"hotkey_paused={not capturing})"
+    )
     print(f"[+] Actions order: {ACTIONS}")
 
     def flush_chunk() -> None:
@@ -441,18 +454,19 @@ def main() -> None:
         np.save(actions_file, actions_array)
         np.save(mouse_file, mouse_array)
         np.save(indices_file, indices_array)
-        chunk_meta.append(
-            {
-                "chunk": int(chunk_id),
-                "start_frame": int(chunk_start_frame),
-                "end_frame": int(chunk_start_frame + len(actions_array) - 1),
-                "actions_file": actions_file.name,
-                "mouse_deltas_file": mouse_file.name,
-                "frame_indices_file": indices_file.name,
-                "frames_dir": str(chunk_dir.relative_to(out_dir)),
-                "num_frames": int(len(actions_array)),
-            }
-        )
+        chunk_entry = {
+            "chunk": int(chunk_id),
+            "start_frame": int(chunk_start_frame),
+            "end_frame": int(chunk_start_frame + len(actions_array) - 1),
+            "actions_file": actions_file.name,
+            "mouse_deltas_file": mouse_file.name,
+            "frame_indices_file": indices_file.name,
+            "frames_dir": str(chunk_dir.relative_to(frames_dir)),
+            "num_frames": int(len(actions_array)),
+        }
+        if frame_size:
+            chunk_entry["frame_size"] = {"width": int(frame_size[0]), "height": int(frame_size[1])}
+        chunk_meta.append(chunk_entry)
         chunk_id += 1
         chunk_start_frame += len(actions_array)
         actions_log.clear()
@@ -488,6 +502,9 @@ def main() -> None:
 
             if frame.shape[-1] == 4:
                 frame = frame[:, :, :3]
+            if resize_shape:
+                frame = cv2.resize(frame, resize_shape, interpolation=cv2.INTER_AREA)
+            frame_size = (frame.shape[1], frame.shape[0])  # width, height
 
             frame_id += 1
             local_idx = len(actions_log) + 1
@@ -575,6 +592,9 @@ def main() -> None:
         "fps": args.fps,
         "region": region,
         "monitor": args.monitor,
+        "frame_size": {"width": int(frame_size[0]), "height": int(frame_size[1])} if frame_size else None,
+        "resize_applied": bool(resize_shape),
+        "resize_target": {"width": resize_shape[0], "height": resize_shape[1]} if resize_shape else None,
         "actions": list(ACTIONS),
         "num_frames": int(frame_id),
         "action_file": "actions.npy",
