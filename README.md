@@ -4,7 +4,7 @@ Frame + input logger for collecting training data from any Windows game. Capture
 
 ## Requirements
 - Windows with a DXCam-supported GPU.
-- Python 3.9+.
+- Python 3.11+.
 - Install deps: `pip install -r requirements.txt`  
   (`dxcam`, `pynput`, `numpy`, `opencv-python`, `psutil`, `pywin32`; `torch` optional for `.pt` exports).
 
@@ -117,7 +117,7 @@ python convert_to_nitrogen.py --root dataset/gow --out dataset/gow_nitro.pt
 
 Key options:
 - `--img-size 256`: resize frames to square RGB (CHW float32 in [0,1]). Use higher/lower values (e.g., 640 or 720) to control training resolution.
-- `--seq-len 16`: sliding window length for actions (produces `M = N - T + 1` samples).
+- `--seq-len 18`: sliding window length for actions (produces `M = N - T + 1` samples).
 - `--mouse-scale 300 --mouse-clip 1.0`: scale/clip mouse dx/dy into [-1, 1] right-stick values.
 - `--action-dim 20|25`: output action dimension; set to `25` to match checkpoints expecting `action_dim=25` (default 20).
 - `--workers 0`: thread count for image decode/resize (0 = auto, 1 = sequential). Increase if you want faster conversion on multi-core CPUs.
