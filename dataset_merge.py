@@ -5,7 +5,7 @@ Use this if you recorded with `capture_logger.py` and want to rebuild
 `actions.npy`, `mouse_deltas.npy`, `dataset.npz`, and optionally `dataset.pt`.
 
 Usage:
-    python dataset_merge.py --root dataset/session1
+    python dataset_merge.py --root dataset/gow
 
 Credits:
 - zrorisc
