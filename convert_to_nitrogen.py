@@ -7,7 +7,7 @@ Convert captured frames/actions into a NitroGen-style dataset with
 Outputs a single .pt file ready for training: {"obs": (M,3,H,W), "actions": (M,T,20), "meta": {...}}
 
 Usage:
-    python convert_to_nitrogen.py --root dataset/session1 --out dataset/session1_nitro.pt
+    python convert_to_nitrogen.py --root dataset/gow --out dataset/gow_nitro.pt
 
 Credits:
 - zrorisc

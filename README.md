@@ -62,7 +62,7 @@ Details:
 - `actions.npy`: shape `(num_frames, 28)`, dtype `int8` (0/1 per action).
 - `mouse_deltas.npy`: shape `(num_frames, 2)`, dtype `float32` (dx, dy in pixels/frame).
 - `frame_indices.npy`: contiguous indices; non-contiguous raises an error at merge.
-- `dataset.npz`: includes actions and mouse deltas (and frame indices when produced by the capture run).
+- `dataset.npz`: capture run includes actions, mouse deltas, and frame indices. Rebuilt via `dataset_merge.py` only contains actions + mouse.
 - `meta.json` includes FPS, region/monitor, action layout, chunk list, and file names.
 
 Action vector layout (28-D, index order):
@@ -102,14 +102,13 @@ If you delete merged files or need to rebuild:
 ```bash
 python dataset_merge.py --root dataset/session1
 ```
-This concatenates `actions_chunk_*.npy` / `mouse_deltas_chunk_*.npy`, regenerates `dataset.npz`/`.pt` (if torch is installed), and updates `meta.json`.
-Chunk PNGs must still exist if you plan to run the converter; keep your chunk folders.
+This concatenates `actions_chunk_*.npy` / `mouse_deltas_chunk_*.npy`, regenerates `dataset.npz`/`.pt` (actions + mouse only), and updates `meta.json`. It does **not** rebuild `frame_indices.npy`; keep the originals from capture for conversion. Chunk PNGs must exist if you plan to run the converter.
 
 ## Convert to NitroGen format
 `convert_to_nitrogen.py` reads `meta.json`, walks the chunk list to load frames in order, maps the 28-D actions to a 20-D gamepad-like space, and emits a single training-ready `.pt`.
 
 ```bash
-python convert_to_nitrogen.py --root dataset/session1 --out dataset/session1_nitro.pt
+python convert_to_nitrogen.py --root dataset/gow --out dataset/gow_nitro.pt
 ```
 
 Key options:
