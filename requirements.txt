@@ -1,0 +1,7 @@
+dxcam
+pynput
+numpy
+opencv-python
+psutil
+pywin32
+torch
