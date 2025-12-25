@@ -1,7 +1,7 @@
 """
 Merge chunked capture outputs into consolidated numpy/torch files.
 
-Use this if you recorded with `capture_logger.py` and want to rebuild:
+Use this if you recorded with `capture.py` and want to rebuild:
 - actions.npy
 - mouse_deltas.npy
 - frame_indices.npy (if present)
@@ -9,7 +9,7 @@ Use this if you recorded with `capture_logger.py` and want to rebuild:
 - dataset.pt (optional, if torch is installed)
 
 Usage:
-    python dataset_merge.py --root dataset/gow
+    python merge.py --root dataset/gow
 
 Credits:
 - zrorisc
@@ -141,4 +141,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

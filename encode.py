@@ -1,6 +1,5 @@
 """
 Convert captured frames/actions into a NitroGen-style dataset with:
-- actions mapped to a 25-D gamepad-like space (required)
 - sliding T-step (configurable) action chunks (T must match your checkpoint's action_horizon; ng.pt uses 18)
 - resized RGB frames (square, configurable)
 
@@ -8,7 +7,7 @@ Outputs a single .pt file ready for training:
     {"obs": (M,3,H,W), "actions": (M,T,A), "meta": {...}}
 
 Usage:
-    python convert_to_nitrogen.py --root dataset/gow --out dataset/gow_nitro.pt --img-size 640 --seq-len 18 --workers 8
+    python encode.py --root dataset/gow --out dataset/gow_nitro.pt --img-size 640 --seq-len 18 --workers 8
 
 Credits:
 - zrorisc

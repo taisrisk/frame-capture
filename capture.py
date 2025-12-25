@@ -8,8 +8,8 @@ Frame + input logger for NitroGen fine-tuning on any Windows game.
 - Emits alignment metadata (capture tick indices) to catch dropped frames/drift.
 
 Usage (PowerShell):
-    python capture_logger.py --out dataset/session1 --fps 30 --process-name Game.exe
-    python capture_logger.py --out dataset/session1 --fps 30 --region 0 0 1920 1080
+    python capture.py --out dataset/session1 --fps 30 --process-name Game.exe
+    python capture.py --out dataset/session1 --fps 30 --region 0 0 1920 1080
 
 Outputs:
     actions.npy, mouse_deltas.npy, frame_indices.npy, dataset.npz/.pt, meta.json, frames/chunk_XXX/*.png
