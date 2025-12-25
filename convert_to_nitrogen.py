@@ -182,6 +182,27 @@ def load_and_resize(frame_path: Path, size: int) -> np.ndarray:
     return img.astype(np.float32) / 255.0
 
 
+def stack_with_progress(items: Sequence[np.ndarray], log_every: int, label: str) -> np.ndarray:
+    n = len(items)
+    if n == 0:
+        raise ValueError(f"Cannot stack empty list for {label}")
+
+    sample = np.asarray(items[0])
+    out = np.empty((n,) + sample.shape, dtype=sample.dtype)
+
+    if log_every <= 0:
+        out[...] = np.stack(items, axis=0)
+        return out
+
+    chunk = max(1, log_every)
+    for start in range(0, n, chunk):
+        end = min(n, start + chunk)
+        out[start:end] = np.stack(items[start:end], axis=0)
+        if end % log_every == 0 or end == n:
+            log(f"{label} {end}/{n}")
+    return out
+
+
 def main() -> None:
     args = parse_args()
     root: Path = args.root
@@ -243,9 +264,16 @@ def main() -> None:
         act_list.append(actions_mapped[t : t + T])
         if args.log_every > 0 and (t + 1) % args.log_every == 0:
             log(f"Prepared actions window {t + 1}/{M}")
+    if args.log_every > 0 and M % args.log_every != 0:
+        log(f"Prepared actions window {M}/{M}")
 
-    obs = torch.from_numpy(np.stack(obs_list))  # (M, 3, H, W)
-    acts = torch.from_numpy(np.stack(act_list))  # (M, T, A)
+    log("Stacking obs tensor")
+    obs_np = stack_with_progress(obs_list, args.log_every, "Stacked obs")
+    log("Stacking actions tensor")
+    acts_np = stack_with_progress(act_list, args.log_every, "Stacked actions")
+
+    obs = torch.from_numpy(obs_np)  # (M, 3, H, W)
+    acts = torch.from_numpy(acts_np)  # (M, T, A)
     log(f"Stacked tensors -> obs {obs.shape}, actions {acts.shape}")
 
     out_dict: Dict[str, object] = {
